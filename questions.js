@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://cqfrjshjttfmkgytfzbz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1ER22CEd20v2DzThjZV8Tw_65eVfn2G";
+const SUPABASE_URL = "https://lrzgcqoqcwicpuuuhaoj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uunR3UQ9rttiK8dG85IedQ__Tn1duVK";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -39,6 +39,7 @@ const QUESTION_GROUPS = {
 };
 
 const categoryButtons = document.querySelectorAll(".category-btn");
+const categoryFilter = document.getElementById("categoryFilter");
 const questionGroupLabel = document.getElementById("questionGroupLabel");
 const questionRealCategory = document.getElementById("questionRealCategory");
 const questionText = document.getElementById("questionText");
@@ -50,15 +51,18 @@ let currentGroupKey = "easy";
 let currentQuestions = [];
 let questionHistory = [];
 let currentQuestionIndex = -1;
+let currentCategoryFilter = "all";
 
 async function loadQuestionsForGroup(groupKey) {
   currentGroupKey = groupKey;
+  currentCategoryFilter = "all";
   questionHistory = [];
   currentQuestionIndex = -1;
 
   const group = QUESTION_GROUPS[groupKey];
 
   questionGroupLabel.textContent = group.label;
+  populateCategoryFilter();
   questionRealCategory.textContent = "";
   questionText.textContent = "Lade Fragen...";
   questionCounter.textContent = "";
@@ -81,8 +85,35 @@ async function loadQuestionsForGroup(groupKey) {
   showRandomQuestion();
 }
 
+//Hier neue Funktion eingefügt
+function populateCategoryFilter() {
+  const group = QUESTION_GROUPS[currentGroupKey];
+
+  categoryFilter.innerHTML = '<option value="all">Alle Kategorien</option>';
+
+  group.categories.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
+
+  categoryFilter.value = "all";
+}
+
+function getFilteredQuestions() {
+  if (currentCategoryFilter === "all") {
+    return currentQuestions;
+  }
+  return currentQuestions.filter(question => question.category === currentCategoryFilter);
+}
+//Hier zu Ende
+
+
 function showRandomQuestion() {
-  if (currentQuestions.length === 0) {
+  const pool = getFilteredQuestions();
+
+  if (pool.length === 0) {
     questionText.textContent = "Keine Fragen in dieser Kategorie gefunden.";
     questionRealCategory.textContent = "";
     questionCounter.textContent = "";
@@ -92,13 +123,15 @@ function showRandomQuestion() {
 
   const seenIds = getSeenIds(currentGroupKey);
 
-  let availableQuestions = currentQuestions.filter(question => {
+  let availableQuestions = pool.filter(question => {
     return !seenIds.includes(question.id);
   });
 
   if (availableQuestions.length === 0) {
-    clearSeenIds(currentGroupKey);
-    availableQuestions = currentQuestions;
+    const poolIds = pool.map(question => question.id);
+    const remainingSeen = seenIds.filter(id => !poolIds.includes(id));
+    localStorage.setItem(getStorageKey(currentGroupKey), JSON.stringify(remainingSeen));
+    availableQuestions = pool;
   }
 
   const randomIndex = Math.floor(Math.random() * availableQuestions.length);
@@ -137,8 +170,8 @@ function displayQuestion(question) {
 }
 
 function updateCounter() {
-  questionCounter.textContent =
-    `${currentQuestions.length} Fragen in dieser Kategorie`;
+  const pool = getFilteredQuestions();
+  questionCounter.textContent = `${pool.length} Fragen in dieser Auswahl`;
 }
 
 function updatePreviousButtonState() {
@@ -182,12 +215,22 @@ function setActiveButton(groupKey) {
   });
 }
 
+
+
+
 categoryButtons.forEach(button => {
   button.addEventListener("click", () => {
     const groupKey = button.dataset.group;
     setActiveButton(groupKey);
     loadQuestionsForGroup(groupKey);
   });
+});
+
+categoryFilter.addEventListener("change", () => {
+  currentCategoryFilter = categoryFilter.value;
+  questionHistory = [];
+  currentQuestionIndex = -1;
+  showRandomQuestion();
 });
 
 newQuestionBtn.addEventListener("click", () => {
