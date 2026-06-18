@@ -161,3 +161,21 @@ h1 {
     font-size: 24px;
   }
 }
+
+
+.category-filter {
+  display: block;
+  margin: 4px auto 18px;
+  width: 100%;
+  max-width: 280px;
+  padding: 10px 14px;
+  border: 2px solid #ffd0e0;
+  border-radius: 14px;
+  background: #fff7fb;
+  color: #222;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  text-align-last: center;
+}
